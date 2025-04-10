@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"os"
 	"testing"
 
 	"github.com/takutakahashi/operation-mcp/pkg/config"
@@ -117,5 +118,59 @@ func TestFindTool(t *testing.T) {
 	_, _, _, err = mgr.FindTool("kubectl_nonexistent")
 	if err == nil {
 		t.Errorf("FindTool should fail for non-existent subtool")
+	}
+}
+
+func TestExecuteRawTool(t *testing.T) {
+	// Skip test if running in CI environment
+	if os.Getenv("CI") == "true" {
+		t.Skip("Skipping test in CI environment")
+	}
+
+	// Create a test config
+	cfg := &config.Config{
+		Tools: []config.Tool{
+			{
+				Name:    "echo",
+				Command: []string{"echo"},
+			},
+			{
+				Name:    "ls",
+				Command: []string{"ls"},
+			},
+		},
+	}
+
+	// Create a tool manager
+	mgr := NewManager(cfg)
+
+	// Test executing a simple command
+	err := mgr.ExecuteRawTool("echo", []string{"hello", "world"})
+	if err != nil {
+		t.Fatalf("ExecuteRawTool failed for echo: %v", err)
+	}
+
+	// Test executing with no arguments
+	err = mgr.ExecuteRawTool("ls", []string{})
+	if err != nil {
+		t.Fatalf("ExecuteRawTool failed for ls with no args: %v", err)
+	}
+
+	// Test executing with arguments
+	err = mgr.ExecuteRawTool("ls", []string{"-la"})
+	if err != nil {
+		t.Fatalf("ExecuteRawTool failed for ls with args: %v", err)
+	}
+
+	// Test executing non-existent tool
+	err = mgr.ExecuteRawTool("nonexistent", []string{})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail for non-existent tool")
+	}
+
+	// Test executing a command that will fail
+	err = mgr.ExecuteRawTool("ls", []string{"/nonexistent/path"})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail when command fails")
 	}
 }

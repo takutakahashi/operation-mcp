@@ -66,18 +66,18 @@ func addDynamicCommands(rootCmd *cobra.Command) error {
 
 	// Add exec command
 	execCmd := &cobra.Command{
-		Use:   "exec [tool] [args...]",
-		Short: "Execute a tool with raw arguments",
-		Long:  `Execute a tool directly with raw arguments, bypassing the structured command interface.`,
+		Use:   "exec [tool_subtool] [args...]",
+		Short: "Execute a specific subtool with parameters",
+		Long:  `Execute a tool's subtool with parameters. The tool_subtool must be specified in the format "tool_subtool", e.g. "kubectl_get_pod".`,
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			toolName := args[0]
+			toolPath := args[0]
 			toolArgs := []string{}
 			if len(args) > 1 {
 				toolArgs = args[1:]
 			}
 			
-			if err := toolMgr.ExecuteRawTool(toolName, toolArgs); err != nil {
+			if err := toolMgr.ExecuteRawTool(toolPath, toolArgs); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}

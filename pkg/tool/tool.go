@@ -12,6 +12,14 @@ import (
 	"github.com/takutakahashi/operation-mcp/pkg/danger"
 )
 
+// ToolInfo represents a tool or subtool for hierarchical display
+type ToolInfo struct {
+	Name        string
+	Description string
+	Params      map[string]config.Parameter
+	Subtools    []ToolInfo
+}
+
 // Manager handles tool execution
 type Manager struct {
 	config        *config.Config
@@ -263,4 +271,51 @@ func (m *Manager) ExecuteRawTool(toolPath string, args []string) error {
 	cmd.Stdin = os.Stdin
 
 	return cmd.Run()
+}
+
+// ListTools returns all tools and subtools defined in the config
+func (m *Manager) ListTools() []ToolInfo {
+	if m.config == nil || len(m.config.Tools) == 0 {
+		return []ToolInfo{}
+	}
+	
+	result := make([]ToolInfo, 0, len(m.config.Tools))
+	
+	for _, tool := range m.config.Tools {
+		toolInfo := ToolInfo{
+			Name:        tool.Name,
+			Description: "", // Config doesn't have description field for tools
+			Params:      tool.Params,
+			Subtools:    make([]ToolInfo, 0, len(tool.Subtools)),
+		}
+		
+		// Add subtools recursively
+		for _, subtool := range tool.Subtools {
+			toolInfo.Subtools = append(toolInfo.Subtools, convertSubtoolToToolInfo(subtool, tool.Name))
+		}
+		
+		result = append(result, toolInfo)
+	}
+	
+	return result
+}
+
+// convertSubtoolToToolInfo converts a subtool configuration to ToolInfo structure
+func convertSubtoolToToolInfo(subtool config.Subtool, parentName string) ToolInfo {
+	name := strings.ReplaceAll(subtool.Name, " ", "_")
+	
+	toolInfo := ToolInfo{
+		Name:        name,
+		Description: "", // Config doesn't have description field for subtools
+		Params:      subtool.Params,
+		Subtools:    make([]ToolInfo, 0, len(subtool.Subtools)),
+	}
+	
+	// Add nested subtools recursively
+	for _, nested := range subtool.Subtools {
+		toolInfo.Subtools = append(toolInfo.Subtools, 
+			convertSubtoolToToolInfo(nested, parentName+"_"+name))
+	}
+	
+	return toolInfo
 }

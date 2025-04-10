@@ -6,7 +6,7 @@ Operations CLI は、設定ファイルから動的にツール群を生成し�
 
 ## 基本仕様
 
-- 言語: Go 1.24
+- 言語: Go 1.19
 - コマンド名: `operations`
 - 設定ファイル: YAML形式
 - ツール名の命名規則: すべての単語をアンダースコア（_）でつなげた形式
@@ -171,6 +171,6 @@ operations kubectl_exec_command --namespace my-namespace --pod my-pod --containe
 
 ## 制約事項
 
-1. Go 1.24 の機能のみを使用
+1. Go 1.19 の機能のみを使用
 2. 設定ファイルは YAML 形式のみ対応
 3. コマンド実行はシェル経由で行う 

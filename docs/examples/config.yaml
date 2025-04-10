@@ -1,0 +1,33 @@
+tools
+- name: kubectl
+  command:
+  - kubectl
+  params:
+    namespace:
+      description: The namespace to run the command in
+      type: string
+      required: true
+      validate:
+        - danger_level: high
+          exclude:
+            - kube-system
+            - kube-public
+            - default
+  subtools:
+    - name: get pod
+      args: ["get", "pod", "-o", "json", "-n", "{{.namespace}}"]
+    - name: describe pod
+      params:
+        pod:
+          description: The pod to describe
+          type: string
+          required: true
+      args: ["describe", "pod", "{{.pod}}", "-n", "{{.namespace}}"]
+    - name: delete pod
+      danger_level: high
+      params:
+        pod:
+          description: The pod to delete
+          type: string
+          required: true
+      args: ["delete", "pod", "{{.pod}}", "-n", "{{.namespace}}"]

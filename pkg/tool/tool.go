@@ -180,3 +180,37 @@ func (m *Manager) ExecuteTool(toolPath string, paramValues map[string]string) er
 
 	return cmd.Run()
 }
+
+// ExecuteRawTool executes a tool with the given raw arguments
+func (m *Manager) ExecuteRawTool(toolName string, args []string) error {
+	// Find the root tool
+	var rootTool *config.Tool
+	for i := range m.config.Tools {
+		if m.config.Tools[i].Name == toolName {
+			rootTool = &m.config.Tools[i]
+			break
+		}
+	}
+
+	if rootTool == nil {
+		return fmt.Errorf("tool not found: %s", toolName)
+	}
+
+	// Get the base command for the tool
+	command := make([]string, len(rootTool.Command))
+	copy(command, rootTool.Command)
+
+	// Append additional arguments
+	if len(args) > 0 {
+		command = append(command, args...)
+	}
+
+	// Execute the command
+	fmt.Printf("Executing: %s\n", strings.Join(command, " "))
+	cmd := exec.Command(command[0], command[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
+}

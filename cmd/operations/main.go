@@ -87,6 +87,45 @@ func main() {
 
 	rootCmd.AddCommand(execCmd)
 
+	// Add the list command
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all available tools",
+		Long:  `List all available tools and their subtools defined in the configuration file`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// If toolMgr is nil, we couldn't load a config
+			if toolMgr == nil {
+				fmt.Println("No tools available. Please provide a valid configuration file.")
+				return
+			}
+			
+			// Get verbose flag
+			verbose, _ := cmd.Flags().GetBool("verbose")
+			
+			// Get tools list
+			tools := toolMgr.ListTools()
+			
+			// Display header
+			fmt.Println("Available tools:")
+			fmt.Println()
+			
+			// Display tools
+			for _, tool := range tools {
+				fmt.Println(tool.Name)
+				
+				// Display subtools recursively
+				printSubtools(tool.Subtools, 1, tool.Name, verbose)
+				
+				fmt.Println() // Empty line between tools
+			}
+		},
+	}
+
+	// Add verbose flag
+	listCmd.Flags().BoolP("verbose", "v", false, "Show detailed information including parameters")
+	
+	rootCmd.AddCommand(listCmd)
+
 	// If we have a config, add commands for each tool
 	if cfg != nil {
 		toolMgr = tool.NewManager(cfg)
@@ -248,4 +287,35 @@ func getParamValues(cmd *cobra.Command, params config.Parameters) map[string]str
 	}
 
 	return result
+}
+
+// printSubtools displays subtools in a hierarchical format
+func printSubtools(subtools []tool.ToolInfo, level int, parentPath string, verbose bool) {
+	indent := strings.Repeat("  ", level) // Indent based on level
+	prefix := indent + "└─ "
+	
+	for _, subtool := range subtools {
+		// Build the full path name
+		fullPath := parentPath + "_" + subtool.Name
+		
+		// Display subtool name and full path
+		fmt.Printf("%s%s (%s)\n", prefix, subtool.Name, fullPath)
+		
+		// If verbose mode, display parameter information
+		if verbose && len(subtool.Params) > 0 {
+			paramIndent := indent + "   " + "  " // Indent for parameters
+			fmt.Printf("%sParameters:\n", paramIndent)
+			
+			for name, param := range subtool.Params {
+				required := ""
+				if param.Required {
+					required = " (required)"
+				}
+				fmt.Printf("%s  --%s%s: %s\n", paramIndent, name, required, param.Description)
+			}
+		}
+		
+		// Display nested subtools
+		printSubtools(subtool.Subtools, level+1, fullPath, verbose)
+	}
 }

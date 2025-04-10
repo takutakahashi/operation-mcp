@@ -64,6 +64,28 @@ func addDynamicCommands(rootCmd *cobra.Command) error {
 	// Create tool manager
 	toolMgr = tool.NewManager(cfg)
 
+	// Add exec command
+	execCmd := &cobra.Command{
+		Use:   "exec [tool] [args...]",
+		Short: "Execute a tool with raw arguments",
+		Long:  `Execute a tool directly with raw arguments, bypassing the structured command interface.`,
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			toolName := args[0]
+			toolArgs := []string{}
+			if len(args) > 1 {
+				toolArgs = args[1:]
+			}
+			
+			if err := toolMgr.ExecuteRawTool(toolName, toolArgs); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		},
+	}
+	
+	rootCmd.AddCommand(execCmd)
+
 	// Add commands for each tool
 	for _, tool := range cfg.Tools {
 		toolCmd := createToolCommand(tool)

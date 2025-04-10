@@ -36,7 +36,7 @@ fi
 
 # Test 3: Sleep short (low danger level)
 echo -e "\n${GREEN}Test 3: Sleep short command (low danger level)${NC}"
-${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep short --seconds 1
+${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep short
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Test 3 passed${NC}"
 else
@@ -46,7 +46,7 @@ fi
 
 # Test 4: Sleep medium (medium danger level)
 echo -e "\n${GREEN}Test 4: Sleep medium command (medium danger level)${NC}"
-${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep medium --seconds 3
+${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep medium
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Test 4 passed${NC}"
 else
@@ -56,7 +56,7 @@ fi
 
 # Test 5: Sleep long (high danger level)
 echo -e "\n${GREEN}Test 5: Sleep long command (high danger level)${NC}"
-echo "y" | ${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep long --seconds 1
+echo "y" | ${OPERATIONS_BIN} --config "$(pwd)/misc/e2e.yaml" sleep long --seconds 5
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Test 5 passed${NC}"
 else

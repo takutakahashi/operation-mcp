@@ -38,7 +38,7 @@ func (m *Manager) CheckDangerLevel(dangerLevel string, paramName string, paramVa
 		if validation.DangerLevel == dangerLevel {
 			for _, exclude := range validation.Exclude {
 				if paramValue == exclude {
-					return false, fmt.Errorf("parameter %s with value %s is excluded for danger level %s", 
+					return false, fmt.Errorf("parameter %s with value %s is excluded for danger level %s",
 						paramName, paramValue, dangerLevel)
 				}
 			}
@@ -70,7 +70,7 @@ func (m *Manager) CheckDangerLevel(dangerLevel string, paramName string, paramVa
 func (m *Manager) handleConfirm(action config.Action) (bool, error) {
 	message := action.Message
 	if message == "" {
-		message = fmt.Sprintf("This operation has danger level %s. Do you want to proceed? (y/n): ", 
+		message = fmt.Sprintf("This operation has danger level %s. Do you want to proceed? (y/n): ",
 			action.DangerLevel)
 	}
 
@@ -89,19 +89,19 @@ func (m *Manager) handleConfirm(action config.Action) (bool, error) {
 func (m *Manager) handleTimeout(action config.Action) (bool, error) {
 	message := action.Message
 	if message == "" {
-		message = fmt.Sprintf("This operation has danger level %s. It will proceed in %d seconds. Press Ctrl+C to cancel.", 
+		message = fmt.Sprintf("This operation has danger level %s. It will proceed in %d seconds. Press Ctrl+C to cancel.",
 			action.DangerLevel, action.Timeout)
 	}
 
 	fmt.Println(message)
-	
+
 	// Wait for the timeout
 	for i := action.Timeout; i > 0; i-- {
 		fmt.Printf("\rProceeding in %d seconds...", i)
 		time.Sleep(1 * time.Second)
 	}
 	fmt.Println("\rProceeding now...                ")
-	
+
 	return true, nil
 }
 

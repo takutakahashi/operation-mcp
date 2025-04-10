@@ -38,12 +38,3 @@ jobs:
 
       - name: Run unit tests
         run: make test
-
-      - name: Run test with coverage
-        run: make test-coverage
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: coverage.html

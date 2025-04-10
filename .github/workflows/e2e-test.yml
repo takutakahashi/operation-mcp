@@ -25,3 +25,9 @@ jobs:
 
       - name: Run E2E tests
         run: bash ./misc/run_e2e_test.sh
+        
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: operations-binary
+          path: build/operations

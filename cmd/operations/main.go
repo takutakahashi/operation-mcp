@@ -290,7 +290,7 @@ func getParamValues(cmd *cobra.Command, params config.Parameters) map[string]str
 }
 
 // printSubtools displays subtools in a hierarchical format
-func printSubtools(subtools []tool.ToolInfo, level int, parentPath string, verbose bool) {
+func printSubtools(subtools []tool.Info, level int, parentPath string, verbose bool) {
 	indent := strings.Repeat("  ", level) // Indent based on level
 	prefix := indent + "└─ "
 	

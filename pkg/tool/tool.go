@@ -182,32 +182,82 @@ func (m *Manager) ExecuteTool(toolPath string, paramValues map[string]string) er
 }
 
 // ExecuteRawTool executes a tool with the given raw arguments
-func (m *Manager) ExecuteRawTool(toolName string, args []string) error {
-	// Find the root tool
-	var rootTool *config.Tool
-	for i := range m.config.Tools {
-		if m.config.Tools[i].Name == toolName {
-			rootTool = &m.config.Tools[i]
-			break
+func (m *Manager) ExecuteRawTool(toolPath string, args []string) error {
+	// Find the tool and subtool
+	command, params, dangerLevel, err := m.FindTool(toolPath)
+	if err != nil {
+		return err
+	}
+
+	// Extract parameter values from the command-line arguments
+	paramValues := make(map[string]string)
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			paramName := strings.TrimLeft(arg, "-")
+			// Handle --param=value format
+			if strings.Contains(paramName, "=") {
+				parts := strings.SplitN(paramName, "=", 2)
+				paramName = parts[0]
+				paramValues[paramName] = parts[1]
+				continue
+			}
+
+			// Handle -p value format
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				paramValues[paramName] = args[i+1]
+				i++ // Skip the next arg since it's the value
+			} else {
+				// Handle boolean flags like -f
+				paramValues[paramName] = "true"
+			}
 		}
 	}
 
-	if rootTool == nil {
-		return fmt.Errorf("tool not found: %s", toolName)
+	// Check danger level for the subtool
+	if dangerLevel != "" {
+		proceed, err := m.dangerManager.CheckDangerLevel(dangerLevel, "", "", nil)
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return fmt.Errorf("operation aborted due to danger level check")
+		}
 	}
 
-	// Get the base command for the tool
-	command := make([]string, len(rootTool.Command))
-	copy(command, rootTool.Command)
+	// Validate required parameters
+	for name, param := range params {
+		if param.Required {
+			value, exists := paramValues[name]
+			if !exists || value == "" {
+				return fmt.Errorf("required parameter missing: %s", name)
+			}
+		}
+	}
 
-	// Append additional arguments
-	if len(args) > 0 {
-		command = append(command, args...)
+	// Replace template parameters in command args
+	finalCommand := make([]string, len(command))
+	for i, arg := range command {
+		if strings.Contains(arg, "{{") {
+			tmpl, err := template.New("arg").Parse(arg)
+			if err != nil {
+				return fmt.Errorf("error parsing template in argument: %w", err)
+			}
+
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, paramValues); err != nil {
+				return fmt.Errorf("error executing template in argument: %w", err)
+			}
+
+			finalCommand[i] = buf.String()
+		} else {
+			finalCommand[i] = arg
+		}
 	}
 
 	// Execute the command
-	fmt.Printf("Executing: %s\n", strings.Join(command, " "))
-	cmd := exec.Command(command[0], command[1:]...)
+	fmt.Printf("Executing: %s\n", strings.Join(finalCommand, " "))
+	cmd := exec.Command(finalCommand[0], finalCommand[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin

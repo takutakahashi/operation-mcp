@@ -64,6 +64,28 @@ func addDynamicCommands(rootCmd *cobra.Command) error {
 	// Create tool manager
 	toolMgr = tool.NewManager(cfg)
 
+	// Add exec command
+	execCmd := &cobra.Command{
+		Use:   "exec [tool_subtool] [args...]",
+		Short: "Execute a specific subtool with parameters",
+		Long:  `Execute a tool's subtool with parameters. The tool_subtool must be specified in the format "tool_subtool", e.g. "kubectl_get_pod".`,
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			toolPath := args[0]
+			toolArgs := []string{}
+			if len(args) > 1 {
+				toolArgs = args[1:]
+			}
+			
+			if err := toolMgr.ExecuteRawTool(toolPath, toolArgs); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		},
+	}
+	
+	rootCmd.AddCommand(execCmd)
+
 	// Add commands for each tool
 	for _, tool := range cfg.Tools {
 		toolCmd := createToolCommand(tool)

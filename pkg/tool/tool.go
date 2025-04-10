@@ -180,3 +180,87 @@ func (m *Manager) ExecuteTool(toolPath string, paramValues map[string]string) er
 
 	return cmd.Run()
 }
+
+// ExecuteRawTool executes a tool with the given raw arguments
+func (m *Manager) ExecuteRawTool(toolPath string, args []string) error {
+	// Find the tool and subtool
+	command, params, dangerLevel, err := m.FindTool(toolPath)
+	if err != nil {
+		return err
+	}
+
+	// Extract parameter values from the command-line arguments
+	paramValues := make(map[string]string)
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if strings.HasPrefix(arg, "-") {
+			paramName := strings.TrimLeft(arg, "-")
+			// Handle --param=value format
+			if strings.Contains(paramName, "=") {
+				parts := strings.SplitN(paramName, "=", 2)
+				paramName = parts[0]
+				paramValues[paramName] = parts[1]
+				continue
+			}
+
+			// Handle -p value format
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				paramValues[paramName] = args[i+1]
+				i++ // Skip the next arg since it's the value
+			} else {
+				// Handle boolean flags like -f
+				paramValues[paramName] = "true"
+			}
+		}
+	}
+
+	// Check danger level for the subtool
+	if dangerLevel != "" {
+		proceed, err := m.dangerManager.CheckDangerLevel(dangerLevel, "", "", nil)
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return fmt.Errorf("operation aborted due to danger level check")
+		}
+	}
+
+	// Validate required parameters
+	for name, param := range params {
+		if param.Required {
+			value, exists := paramValues[name]
+			if !exists || value == "" {
+				return fmt.Errorf("required parameter missing: %s", name)
+			}
+		}
+	}
+
+	// Replace template parameters in command args
+	finalCommand := make([]string, len(command))
+	for i, arg := range command {
+		if strings.Contains(arg, "{{") {
+			tmpl, err := template.New("arg").Parse(arg)
+			if err != nil {
+				return fmt.Errorf("error parsing template in argument: %w", err)
+			}
+
+			var buf bytes.Buffer
+			if err := tmpl.Execute(&buf, paramValues); err != nil {
+				return fmt.Errorf("error executing template in argument: %w", err)
+			}
+
+			finalCommand[i] = buf.String()
+		} else {
+			finalCommand[i] = arg
+		}
+	}
+
+	// Execute the command
+	fmt.Printf("Executing: %s\n", strings.Join(finalCommand, " "))
+	cmd := exec.Command(finalCommand[0], finalCommand[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
+}

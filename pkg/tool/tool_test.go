@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"os"
 	"testing"
 
 	"github.com/takutakahashi/operation-mcp/pkg/config"
@@ -117,5 +118,72 @@ func TestFindTool(t *testing.T) {
 	_, _, _, err = mgr.FindTool("kubectl_nonexistent")
 	if err == nil {
 		t.Errorf("FindTool should fail for non-existent subtool")
+	}
+}
+
+func TestExecuteRawTool(t *testing.T) {
+	// Skip test if running in CI environment
+	if os.Getenv("CI") == "true" {
+		t.Skip("Skipping test in CI environment")
+	}
+
+	// Create a test config
+	cfg := &config.Config{
+		Tools: []config.Tool{
+			{
+				Name:    "echo",
+				Command: []string{"echo"},
+				Params: map[string]config.Parameter{
+					"message": {
+						Description: "The message to echo",
+						Type:        "string",
+						Required:    true,
+					},
+				},
+				Subtools: []config.Subtool{
+					{
+						Name: "hello",
+						Args: []string{"Hello, {{.message}}!"},
+					},
+					{
+						Name: "goodbye",
+						Args: []string{"Goodbye, {{.message}}!"},
+					},
+				},
+			},
+		},
+	}
+
+	// Create a tool manager
+	mgr := NewManager(cfg)
+
+	// Test executing a valid subtool
+	err := mgr.ExecuteRawTool("echo_hello", []string{"--message=World"})
+	if err != nil {
+		t.Fatalf("ExecuteRawTool failed for echo_hello: %v", err)
+	}
+
+	// Test executing another valid subtool
+	err = mgr.ExecuteRawTool("echo_goodbye", []string{"--message=World"})
+	if err != nil {
+		t.Fatalf("ExecuteRawTool failed for echo_goodbye: %v", err)
+	}
+
+	// Test executing with invalid tool path
+	err = mgr.ExecuteRawTool("nonexistent", []string{})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail for non-existent tool")
+	}
+
+	// Test executing with invalid subtool
+	err = mgr.ExecuteRawTool("echo_invalid", []string{})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail for non-existent subtool")
+	}
+
+	// Test executing without required parameter
+	err = mgr.ExecuteRawTool("echo_hello", []string{})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail when required parameter is missing")
 	}
 }

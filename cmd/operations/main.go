@@ -18,11 +18,36 @@ var (
 )
 
 func main() {
+	// Parse config from flags directly to handle it early
+	for i, arg := range os.Args {
+		if strings.HasPrefix(arg, "--config=") {
+			configPath = strings.TrimPrefix(arg, "--config=")
+			break
+		} else if arg == "--config" && i+1 < len(os.Args) {
+			configPath = os.Args[i+1]
+			break
+		}
+	}
+
+	// Try to load the config early
+	var err error
+	if configPath != "" {
+		cfg, err = config.LoadConfig(configPath)
+		if err != nil {
+			fmt.Printf("Warning: Failed to load config from %s: %v\n", configPath, err)
+		}
+	}
+
 	rootCmd := &cobra.Command{
 		Use:   "operations",
 		Short: "Operations CLI tool",
 		Long:  "A CLI tool for executing operations defined in a configuration file",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// If we already loaded the config, we can skip this
+			if cfg != nil {
+				return nil
+			}
+
 			var err error
 			cfg, err = config.LoadConfig(configPath)
 			if err != nil {
@@ -38,33 +63,9 @@ func main() {
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "path to config file")
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", configPath, "path to config file")
 
-	// Add dynamic commands based on configuration
-	if err := addDynamicCommands(rootCmd); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func addDynamicCommands(rootCmd *cobra.Command) error {
-	// Try to load config
-	cfg, err := config.LoadConfig(configPath)
-	if err != nil {
-		// If config can't be loaded, just return without adding commands
-		// They will be added in the PersistentPreRunE function
-		return nil
-	}
-
-	// Create tool manager
-	toolMgr = tool.NewManager(cfg)
-
-	// Add exec command
+	// Add the exec command
 	execCmd := &cobra.Command{
 		Use:   "exec [tool_subtool] [args...]",
 		Short: "Execute a specific subtool with parameters",
@@ -86,13 +87,19 @@ func addDynamicCommands(rootCmd *cobra.Command) error {
 
 	rootCmd.AddCommand(execCmd)
 
-	// Add commands for each tool
-	for _, tool := range cfg.Tools {
-		toolCmd := createToolCommand(tool)
-		rootCmd.AddCommand(toolCmd)
+	// If we have a config, add commands for each tool
+	if cfg != nil {
+		toolMgr = tool.NewManager(cfg)
+		for _, tool := range cfg.Tools {
+			toolCmd := createToolCommand(tool)
+			rootCmd.AddCommand(toolCmd)
+		}
 	}
 
-	return nil
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func createToolCommand(tool config.Tool) *cobra.Command {
@@ -124,6 +131,17 @@ func createToolCommand(tool config.Tool) *cobra.Command {
 
 		// Add parent tool's parameters to subtool command
 		for name, param := range tool.Params {
+			// Skip adding the flag if it already exists
+			exists := false
+			subtoolCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				if flag.Name == name {
+					exists = true
+				}
+			})
+			if exists {
+				continue
+			}
+
 			switch param.Type {
 			case "string":
 				subtoolCmd.Flags().String(name, "", param.Description)

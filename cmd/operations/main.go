@@ -76,14 +76,14 @@ func addDynamicCommands(rootCmd *cobra.Command) error {
 			if len(args) > 1 {
 				toolArgs = args[1:]
 			}
-			
+
 			if err := toolMgr.ExecuteRawTool(toolPath, toolArgs); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		},
 	}
-	
+
 	rootCmd.AddCommand(execCmd)
 
 	// Add commands for each tool

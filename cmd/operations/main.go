@@ -99,6 +99,26 @@ func createToolCommand(tool config.Tool) *cobra.Command {
         // Add subcommands for each subtool
         for _, subtool := range tool.Subtools {
                 subtoolCmd := createSubtoolCommand(tool.Name, subtool)
+                
+                // Add parent tool's parameters to subtool command
+                for name, param := range tool.Params {
+                        switch param.Type {
+                        case "string":
+                                subtoolCmd.Flags().String(name, "", param.Description)
+                        case "int", "number":
+                                subtoolCmd.Flags().Int(name, 0, param.Description)
+                        case "bool", "boolean":
+                                subtoolCmd.Flags().Bool(name, false, param.Description)
+                        default:
+                                // Default to string for unknown types
+                                subtoolCmd.Flags().String(name, "", param.Description)
+                        }
+
+                        if param.Required {
+                                subtoolCmd.MarkFlagRequired(name)
+                        }
+                }
+                
                 toolCmd.AddCommand(subtoolCmd)
         }
 
@@ -116,7 +136,8 @@ func createSubtoolCommand(parentName string, subtool config.Subtool) *cobra.Comm
                 Run: func(cmd *cobra.Command, args []string) {
                         // If no subtools, execute the subtool
                         if len(subtool.Subtools) == 0 {
-                                paramValues := getParamValues(cmd, nil) // Get all flags
+                                // Get parameter values from both the parent tool and this subtool
+                                paramValues := getParamValues(cmd, subtool.Params)
                                 if err := toolMgr.ExecuteTool(fullName, paramValues); err != nil {
                                         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
                                         os.Exit(1)
@@ -164,10 +185,27 @@ func addParamFlags(cmd *cobra.Command, params config.Parameters) {
 func getParamValues(cmd *cobra.Command, params config.Parameters) map[string]string {
         result := make(map[string]string)
 
-        // Get all flags
+        // Get all flags from the current command and all parent commands
         cmd.Flags().Visit(func(flag *pflag.Flag) {
                 result[flag.Name] = flag.Value.String()
         })
+
+        // Get all persistent flags
+        cmd.PersistentFlags().Visit(func(flag *pflag.Flag) {
+                result[flag.Name] = flag.Value.String()
+        })
+
+        // Get flags from parent commands
+        parent := cmd.Parent()
+        for parent != nil {
+                parent.Flags().Visit(func(flag *pflag.Flag) {
+                        result[flag.Name] = flag.Value.String()
+                })
+                parent.PersistentFlags().Visit(func(flag *pflag.Flag) {
+                        result[flag.Name] = flag.Value.String()
+                })
+                parent = parent.Parent()
+        }
 
         return result
 }

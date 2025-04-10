@@ -1,0 +1,55 @@
+actions:
+  - danger_level: high
+    type: confirm
+    message: "This is a high danger operation. Proceed? (y/n): "
+  - danger_level: medium
+    type: timeout
+    message: "This is a medium danger operation. Proceeding in 5 seconds."
+    timeout: 5
+  - danger_level: low
+    type: force
+    message: "This is a low danger operation."
+
+tools:
+  - name: echo
+    command:
+      - echo
+    subtools:
+      - name: hello
+        params:
+          message:
+            description: The message to echo
+            type: string
+            required: true
+        args: ["Hello, {{.message}}!"]
+      - name: goodbye
+        params:
+          message:
+            description: The message to echo
+            type: string
+            required: true
+        args: ["Goodbye, {{.message}}!"]
+  
+  - name: sleep
+    command:
+      - sleep
+    params:
+      seconds:
+        description: The number of seconds to sleep
+        type: string
+        required: false
+    subtools:
+      - name: short
+        args: ["1"]
+        danger_level: low
+      - name: medium
+        args: ["3"]
+        danger_level: medium
+      - name: long
+        params:
+          seconds:
+            description: The number of seconds to sleep
+            type: string
+            required: true
+        args: ["{{.seconds}}"]
+        danger_level: high

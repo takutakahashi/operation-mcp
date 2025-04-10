@@ -133,10 +133,23 @@ func TestExecuteRawTool(t *testing.T) {
 			{
 				Name:    "echo",
 				Command: []string{"echo"},
-			},
-			{
-				Name:    "ls",
-				Command: []string{"ls"},
+				Params: map[string]config.Parameter{
+					"message": {
+						Description: "The message to echo",
+						Type:        "string",
+						Required:    true,
+					},
+				},
+				Subtools: []config.Subtool{
+					{
+						Name: "hello",
+						Args: []string{"Hello, {{.message}}!"},
+					},
+					{
+						Name: "goodbye",
+						Args: []string{"Goodbye, {{.message}}!"},
+					},
+				},
 			},
 		},
 	}
@@ -144,33 +157,33 @@ func TestExecuteRawTool(t *testing.T) {
 	// Create a tool manager
 	mgr := NewManager(cfg)
 
-	// Test executing a simple command
-	err := mgr.ExecuteRawTool("echo", []string{"hello", "world"})
+	// Test executing a valid subtool
+	err := mgr.ExecuteRawTool("echo_hello", []string{"--message=World"})
 	if err != nil {
-		t.Fatalf("ExecuteRawTool failed for echo: %v", err)
+		t.Fatalf("ExecuteRawTool failed for echo_hello: %v", err)
 	}
 
-	// Test executing with no arguments
-	err = mgr.ExecuteRawTool("ls", []string{})
+	// Test executing another valid subtool
+	err = mgr.ExecuteRawTool("echo_goodbye", []string{"--message=World"})
 	if err != nil {
-		t.Fatalf("ExecuteRawTool failed for ls with no args: %v", err)
+		t.Fatalf("ExecuteRawTool failed for echo_goodbye: %v", err)
 	}
 
-	// Test executing with arguments
-	err = mgr.ExecuteRawTool("ls", []string{"-la"})
-	if err != nil {
-		t.Fatalf("ExecuteRawTool failed for ls with args: %v", err)
-	}
-
-	// Test executing non-existent tool
+	// Test executing with invalid tool path
 	err = mgr.ExecuteRawTool("nonexistent", []string{})
 	if err == nil {
 		t.Errorf("ExecuteRawTool should fail for non-existent tool")
 	}
 
-	// Test executing a command that will fail
-	err = mgr.ExecuteRawTool("ls", []string{"/nonexistent/path"})
+	// Test executing with invalid subtool
+	err = mgr.ExecuteRawTool("echo_invalid", []string{})
 	if err == nil {
-		t.Errorf("ExecuteRawTool should fail when command fails")
+		t.Errorf("ExecuteRawTool should fail for non-existent subtool")
+	}
+
+	// Test executing without required parameter
+	err = mgr.ExecuteRawTool("echo_hello", []string{})
+	if err == nil {
+		t.Errorf("ExecuteRawTool should fail when required parameter is missing")
 	}
 }

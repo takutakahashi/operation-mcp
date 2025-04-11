@@ -307,7 +307,8 @@ func (m *Manager) ListTools() []Info {
         return result
 }
 
-// convertSubtoolToInfo converts a subtool configuration to Info structure
+// convertSubtoolToInfo converts a subtool configuration to Info structure.
+// It takes a subtool config and parent tool name as input.
 func convertSubtoolToInfo(subtool config.Subtool, parentName string) Info {
         name := strings.ReplaceAll(subtool.Name, " ", "_")
 

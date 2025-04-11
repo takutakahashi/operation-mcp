@@ -41,7 +41,7 @@ func NewSSHConfig() *SSHConfig {
 	currentUser, err := user.Current()
 	username := ""
 	homeDir := ""
-	
+
 	if err == nil {
 		username = currentUser.Username
 		homeDir = currentUser.HomeDir

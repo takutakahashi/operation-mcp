@@ -300,6 +300,7 @@ func (m *Manager) ListTools() []Info {
 	return result
 }
 
+
 // convertSubtoolToInfo converts a subtool configuration to Info structure
 func convertSubtoolToInfo(subtool config.Subtool, parentName string) Info {
 	name := strings.ReplaceAll(subtool.Name, " ", "_")
@@ -314,6 +315,7 @@ func convertSubtoolToInfo(subtool config.Subtool, parentName string) Info {
 	// Add nested subtools recursively
 	for _, nested := range subtool.Subtools {
 		toolInfo.Subtools = append(toolInfo.Subtools, 
+
 			convertSubtoolToInfo(nested, parentName+"_"+name))
 	}
 	

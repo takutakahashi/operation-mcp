@@ -10,8 +10,9 @@ import (
 
 // Config represents the main configuration structure
 type Config struct {
-	Actions []Action `yaml:"actions"`
-	Tools   []Tool   `yaml:"tools"`
+	Actions []Action   `yaml:"actions"`
+	Tools   []Tool     `yaml:"tools"`
+	SSH     *SSHConfig `yaml:"ssh,omitempty"`
 }
 
 // Action represents a danger level action configuration
@@ -55,6 +56,18 @@ type Validation struct {
 
 // Parameters is a map of parameter name to Parameter
 type Parameters map[string]Parameter
+
+// SSHConfig represents SSH connection configuration
+type SSHConfig struct {
+	Host      string  `yaml:"host,omitempty"`
+	Port      int     `yaml:"port,omitempty"`
+	User      string  `yaml:"user,omitempty"`
+	Password  string  `yaml:"password,omitempty"`
+	KeyPath   string  `yaml:"key,omitempty"`
+	VerifyHost *bool   `yaml:"verify_host,omitempty"`
+	HostKeyPath string `yaml:"host_key_path,omitempty"`
+	Timeout   int     `yaml:"timeout,omitempty"` // in seconds
+}
 
 // LoadConfig loads the configuration from a file
 func LoadConfig(configPath string) (*Config, error) {

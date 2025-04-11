@@ -10,6 +10,7 @@ import (
 
 	"github.com/takutakahashi/operation-mcp/pkg/config"
 	"github.com/takutakahashi/operation-mcp/pkg/danger"
+	"github.com/takutakahashi/operation-mcp/pkg/executor"
 )
 
 // ToolInfo represents a tool or subtool for hierarchical display
@@ -24,6 +25,7 @@ type ToolInfo struct {
 type Manager struct {
 	config        *config.Config
 	dangerManager *danger.Manager
+	execInstance  executor.Executor
 }
 
 // NewManager creates a new tool manager
@@ -32,6 +34,11 @@ func NewManager(cfg *config.Config) *Manager {
 		config:        cfg,
 		dangerManager: danger.NewManager(cfg.Actions),
 	}
+}
+
+// WithExecutor sets the executor for the tool manager
+func (m *Manager) WithExecutor(exec executor.Executor) {
+	m.execInstance = exec
 }
 
 // FindTool finds a tool by its name

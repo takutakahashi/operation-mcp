@@ -10,6 +10,17 @@ jobs:
   e2e-test:
     name: Run E2E Tests
     runs-on: ubuntu-latest
+    services:
+      ssh-server:
+        image: linuxserver/openssh-server:latest
+        ports:
+          - 2222:2222
+        env:
+          USER_NAME: testuser
+          USER_PASSWORD: testpassword
+          PASSWORD_ACCESS: 'true'
+          SUDO_ACCESS: 'true'
+          
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -23,8 +34,21 @@ jobs:
       - name: Build application
         run: make build
 
-      - name: Run E2E tests
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Verify SSH server is running
+        run: |
+          # Wait for SSH server to be ready
+          sleep 5
+          # Test SSH connection
+          sshpass -p 'testpassword' ssh -o StrictHostKeyChecking=no -p 2222 testuser@localhost echo "SSH connection successful"
+      
+      - name: Run local E2E tests
         run: bash ./misc/run_e2e_test.sh
+      
+      - name: Run SSH E2E tests
+        run: bash ./misc/run_ssh_e2e_test.sh
         
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4

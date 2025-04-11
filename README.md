@@ -9,6 +9,7 @@ A CLI tool for executing operations defined in a YAML configuration file.
 - Parameter validation and templating
 - Danger level management for sensitive operations
 - Configurable action types (confirm, timeout, force)
+- Remote execution via SSH
 
 ## Installation
 
@@ -50,6 +51,39 @@ operations kubectl_describe_pod --namespace my-namespace --pod my-pod
 
 # Running a dangerous operation (will prompt for confirmation)
 operations kubectl_delete_pod --namespace my-namespace --pod my-pod
+
+# Running commands on a remote host via SSH
+operations --remote --host example.com --user admin kubectl_get_pod --namespace my-namespace
+
+# Using a specific SSH key
+operations --remote --host example.com --user admin --key ~/.ssh/custom_key kubectl_get_pod --namespace my-namespace
+```
+
+### Remote Execution Options
+
+You can execute commands on a remote host using the following options:
+
+```bash
+--remote            Enable remote execution via SSH
+--host string       SSH remote host (required in remote mode)
+--user string       SSH username (default: current user)
+--key string        Path to SSH private key (default: ~/.ssh/id_rsa)
+--password string   SSH password (key authentication is preferred)
+--port int          SSH port (default: 22)
+--timeout duration  SSH connection timeout (default: 10s)
+--verify-host       Verify host key (default: true)
+```
+
+You can also set SSH options in the configuration file:
+
+```yaml
+ssh:
+  host: example.com
+  user: username
+  key: ~/.ssh/id_rsa
+  port: 22
+  verify_host: true
+  timeout: 10
 ```
 
 ## Configuration Format

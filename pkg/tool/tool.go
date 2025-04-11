@@ -298,7 +298,7 @@ func (m *Manager) ListTools() []Info {
 
                 // Add subtools recursively
                 for _, subtool := range tool.Subtools {
-                        toolInfo.Subtools = append(toolInfo.Subtools, convertSubtoolToToolInfo(subtool, tool.Name))
+                        toolInfo.Subtools = append(toolInfo.Subtools, convertSubtoolToInfo(subtool, tool.Name))
                 }
 
                 result = append(result, toolInfo)
@@ -307,8 +307,8 @@ func (m *Manager) ListTools() []Info {
         return result
 }
 
-// convertSubtoolToToolInfo converts a subtool configuration to Info structure
-func convertSubtoolToToolInfo(subtool config.Subtool, parentName string) Info {
+// convertSubtoolToInfo converts a subtool configuration to Info structure
+func convertSubtoolToInfo(subtool config.Subtool, parentName string) Info {
         name := strings.ReplaceAll(subtool.Name, " ", "_")
 
         toolInfo := Info{
@@ -321,7 +321,7 @@ func convertSubtoolToToolInfo(subtool config.Subtool, parentName string) Info {
         // Add nested subtools recursively
         for _, nested := range subtool.Subtools {
                 toolInfo.Subtools = append(toolInfo.Subtools,
-                        convertSubtoolToToolInfo(nested, parentName+"_"+name))
+                        convertSubtoolToInfo(nested, parentName+"_"+name))
         }
 
         return toolInfo

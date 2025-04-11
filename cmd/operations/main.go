@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -12,9 +13,19 @@ import (
 )
 
 var (
-	configPath string
-	cfg        *config.Config
-	toolMgr    *tool.Manager
+	configPath    string
+	cfg           *config.Config
+	toolMgr       *tool.Manager
+	
+	// SSH関連のフラグ
+	remoteMode    bool
+	sshHost       string
+	sshUser       string
+	sshKeyPath    string
+	sshPassword   string
+	sshPort       int
+	sshTimeout    time.Duration
+	sshVerifyHost bool
 )
 
 func main() {
@@ -58,12 +69,33 @@ func main() {
 				return fmt.Errorf("invalid configuration: %w", err)
 			}
 
+			// Create and configure the tool manager
 			toolMgr = tool.NewManager(cfg)
+			
+			// Create the appropriate executor based on flags
+			exec, err := createExecutor()
+			if err != nil {
+				return fmt.Errorf("failed to create executor: %w", err)
+			}
+			
+			// Set executor for the tool manager
+			toolMgr.WithExecutor(exec)
+			
 			return nil
 		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", configPath, "path to config file")
+	
+	// SSH関連のフラグを追加
+	rootCmd.PersistentFlags().BoolVar(&remoteMode, "remote", false, "Enable remote execution mode via SSH")
+	rootCmd.PersistentFlags().StringVar(&sshHost, "host", "", "SSH remote host")
+	rootCmd.PersistentFlags().StringVar(&sshUser, "user", "", "SSH username")
+	rootCmd.PersistentFlags().StringVar(&sshKeyPath, "key", "", "Path to SSH private key")
+	rootCmd.PersistentFlags().StringVar(&sshPassword, "password", "", "SSH password (not recommended)")
+	rootCmd.PersistentFlags().IntVar(&sshPort, "port", 22, "SSH port")
+	rootCmd.PersistentFlags().DurationVar(&sshTimeout, "timeout", 10*time.Second, "SSH connection timeout")
+	rootCmd.PersistentFlags().BoolVar(&sshVerifyHost, "verify-host", true, "Verify host key")
 
 	// Add the exec command
 	execCmd := &cobra.Command{
@@ -128,7 +160,18 @@ func main() {
 
 	// If we have a config, add commands for each tool
 	if cfg != nil {
+		// Create and configure the tool manager
 		toolMgr = tool.NewManager(cfg)
+		
+		// Create the appropriate executor based on flags
+		exec, err := createExecutor()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to create executor: %v\n", err)
+		} else {
+			// Set executor for the tool manager
+			toolMgr.WithExecutor(exec)
+		}
+		
 		for _, tool := range cfg.Tools {
 			toolCmd := createToolCommand(tool)
 			rootCmd.AddCommand(toolCmd)

@@ -278,9 +278,9 @@ func (m *Manager) ListTools() []ToolInfo {
 	if m.config == nil || len(m.config.Tools) == 0 {
 		return []ToolInfo{}
 	}
-	
+
 	result := make([]ToolInfo, 0, len(m.config.Tools))
-	
+
 	for _, tool := range m.config.Tools {
 		toolInfo := ToolInfo{
 			Name:        tool.Name,
@@ -288,34 +288,34 @@ func (m *Manager) ListTools() []ToolInfo {
 			Params:      tool.Params,
 			Subtools:    make([]ToolInfo, 0, len(tool.Subtools)),
 		}
-		
+
 		// Add subtools recursively
 		for _, subtool := range tool.Subtools {
 			toolInfo.Subtools = append(toolInfo.Subtools, convertSubtoolToToolInfo(subtool, tool.Name))
 		}
-		
+
 		result = append(result, toolInfo)
 	}
-	
+
 	return result
 }
 
 // convertSubtoolToToolInfo converts a subtool configuration to ToolInfo structure
 func convertSubtoolToToolInfo(subtool config.Subtool, parentName string) ToolInfo {
 	name := strings.ReplaceAll(subtool.Name, " ", "_")
-	
+
 	toolInfo := ToolInfo{
 		Name:        name,
 		Description: "", // Config doesn't have description field for subtools
 		Params:      subtool.Params,
 		Subtools:    make([]ToolInfo, 0, len(subtool.Subtools)),
 	}
-	
+
 	// Add nested subtools recursively
 	for _, nested := range subtool.Subtools {
-		toolInfo.Subtools = append(toolInfo.Subtools, 
+		toolInfo.Subtools = append(toolInfo.Subtools,
 			convertSubtoolToToolInfo(nested, parentName+"_"+name))
 	}
-	
+
 	return toolInfo
 }

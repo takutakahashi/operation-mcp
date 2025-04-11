@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	configPath    string
-	cfg           *config.Config
-	toolMgr       *tool.Manager
-	
+	configPath string
+	cfg        *config.Config
+	toolMgr    *tool.Manager
+
 	// SSH関連のフラグ
 	remoteMode    bool
 	sshHost       string
@@ -71,22 +71,22 @@ func main() {
 
 			// Create and configure the tool manager
 			toolMgr = tool.NewManager(cfg)
-			
+
 			// Create the appropriate executor based on flags
 			exec, err := createExecutor()
 			if err != nil {
 				return fmt.Errorf("failed to create executor: %w", err)
 			}
-			
+
 			// Set executor for the tool manager
 			toolMgr.WithExecutor(exec)
-			
+
 			return nil
 		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", configPath, "path to config file")
-	
+
 	// SSH関連のフラグを追加
 	rootCmd.PersistentFlags().BoolVar(&remoteMode, "remote", false, "Enable remote execution mode via SSH")
 	rootCmd.PersistentFlags().StringVar(&sshHost, "host", "", "SSH remote host")
@@ -130,24 +130,24 @@ func main() {
 				fmt.Println("No tools available. Please provide a valid configuration file.")
 				return
 			}
-			
+
 			// Get verbose flag
 			verbose, _ := cmd.Flags().GetBool("verbose")
-			
+
 			// Get tools list
 			tools := toolMgr.ListTools()
-			
+
 			// Display header
 			fmt.Println("Available tools:")
 			fmt.Println()
-			
+
 			// Display tools
 			for _, tool := range tools {
 				fmt.Println(tool.Name)
-				
+
 				// Display subtools recursively
 				printSubtools(tool.Subtools, 1, tool.Name, verbose)
-				
+
 				fmt.Println() // Empty line between tools
 			}
 		},
@@ -155,14 +155,14 @@ func main() {
 
 	// Add verbose flag
 	listCmd.Flags().BoolP("verbose", "v", false, "Show detailed information including parameters")
-	
+
 	rootCmd.AddCommand(listCmd)
 
 	// If we have a config, add commands for each tool
 	if cfg != nil {
 		// Create and configure the tool manager
 		toolMgr = tool.NewManager(cfg)
-		
+
 		// Create the appropriate executor based on flags
 		exec, err := createExecutor()
 		if err != nil {
@@ -171,7 +171,7 @@ func main() {
 			// Set executor for the tool manager
 			toolMgr.WithExecutor(exec)
 		}
-		
+
 		for _, tool := range cfg.Tools {
 			toolCmd := createToolCommand(tool)
 			rootCmd.AddCommand(toolCmd)
@@ -336,19 +336,19 @@ func getParamValues(cmd *cobra.Command, params config.Parameters) map[string]str
 func printSubtools(subtools []tool.ToolInfo, level int, parentPath string, verbose bool) {
 	indent := strings.Repeat("  ", level) // Indent based on level
 	prefix := indent + "└─ "
-	
+
 	for _, subtool := range subtools {
 		// Build the full path name
 		fullPath := parentPath + "_" + subtool.Name
-		
+
 		// Display subtool name and full path
 		fmt.Printf("%s%s (%s)\n", prefix, subtool.Name, fullPath)
-		
+
 		// If verbose mode, display parameter information
 		if verbose && len(subtool.Params) > 0 {
 			paramIndent := indent + "   " + "  " // Indent for parameters
 			fmt.Printf("%sParameters:\n", paramIndent)
-			
+
 			for name, param := range subtool.Params {
 				required := ""
 				if param.Required {
@@ -357,7 +357,7 @@ func printSubtools(subtools []tool.ToolInfo, level int, parentPath string, verbo
 				fmt.Printf("%s  --%s%s: %s\n", paramIndent, name, required, param.Description)
 			}
 		}
-		
+
 		// Display nested subtools
 		printSubtools(subtool.Subtools, level+1, fullPath, verbose)
 	}

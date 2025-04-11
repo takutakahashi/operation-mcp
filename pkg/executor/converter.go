@@ -7,8 +7,13 @@ import (
 )
 
 // SSHConfigConverter converts config.SSHConfig to executor.SSHConfig
-func SSHConfigConverter(cfg config.SSHConfig) *SSHConfig {
+func SSHConfigConverter(cfg *config.SSHConfig) *SSHConfig {
 	sshCfg := NewSSHConfig()
+
+	// If no config provided, return default config
+	if cfg == nil {
+		return sshCfg
+	}
 
 	// Copy values from config.SSHConfig to executor.SSHConfig
 	if cfg.Host != "" {
